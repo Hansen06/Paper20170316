@@ -10,7 +10,7 @@ import javax.swing.JLabel;
 import javax.swing.JSeparator;
 import javax.swing.JTextArea;
 
-import util.WriteFile;
+import utils.WriteFile;
 
 import com.yhs.main.MainWindow;
 import com.yhs.statistics.Statistics;

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -17,6 +18,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTextArea;
@@ -24,39 +26,62 @@ import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import util.GetFileName;
-import util.ReadFile;
-import util.ReadStopWords;
-import util.WordSort;
-import util.WriteFile;
+import utils.GetFileName;
+import utils.List_To_String;
+import utils.ReadFile;
+import utils.ReadStopWords;
+import utils.WordSort;
+import utils.WriteFile;
 
+import com.yhs.abstract_extract.AbstractExtract;
 import com.yhs.extract.ExtractText;
+import com.yhs.keywordmatch.Key_Word_Match;
 import com.yhs.statistics.Statistics;
+import java.awt.Color;
+import java.awt.SystemColor;
 
 public class MainWindow {
 
 	private JFrame frame;
 	private JTextField textField_filename;
 	private JScrollPane scrollPane;
-	private JTextArea textArea_wordfrequency;
+	private JTextArea textArea_wordfrequency;//显示统计的词频
+	private JTextArea textArea_keyword;//显示匹配的关键词
 	private JLabel label;
 	private JButton btn_begain;
-	private JButton btn_clear;
+	private JButton btn_pipie;
 	private JSeparator separator;//分隔条
 	private String xpath;//文件路径
 	static private String content;//文本内容
 	
-	
+	private String wf_save_fileName = null;	//获取保存文本名称
 	private String wf_save_path = null;	
 	
-	ArrayList<String> filepathList = new ArrayList<String>();
-	ArrayList<String> filenameList = new ArrayList<String>();
+	ArrayList<String> filepathList = new ArrayList<String>();//保存文件路径
+	ArrayList<String> filenameList = new ArrayList<String>();//保存文件名
 
-	ArrayList<String> contentList = new ArrayList<String>();
+	ArrayList<String> contentList = new ArrayList<String>();//保存提取的内容
  	
  	private boolean isDirectory = false;
  	private JMenuBar menuBar;
-	
+ 	private JMenuItem menuItem;
+ 	
+ 	static ArrayList<String> matchedWord = new ArrayList<String>();//保存从文本中匹配的关键词
+ 	List<String> wordList = null;
+ 	
+ 	List<String>  pipeiWord = new ArrayList<String>();  //保存关键词及词频统计的词，用于匹配句子，传递给AbstractExtract类
+ 	private JMenuItem menuItem_3;
+  	
+ 	int ranking = 0;
+ 	
+
+	public int getRanking() {
+		return ranking;
+	}
+
+	public void setRanking(int ranking) {
+		this.ranking = ranking;
+	}
 
 	/**
 	 * Launch the application.
@@ -97,27 +122,12 @@ public class MainWindow {
 	 */
 	private void initialize() {
 		frame = new JFrame();
+		frame.getContentPane().setBackground(SystemColor.menu);
 		frame.getContentPane().setLayout(null);
 		frame.setTitle("词频统计");
-		frame.setBounds(100, 100, 801, 559);
+		frame.setBounds(100, 100, 857, 617);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		/*
-		 * 创建菜单栏
-		 */
-//		JRootPane rp = new JRootPane();
-//		frame.setContentPane(rp);
-//		JMenuBar menubar = new JMenuBar();
-//		rp.setJMenuBar(menubar);
-//		JMenu menu1 = new JMenu("文件");
-//		JMenu menu2 = new JMenu("编辑");
-//		JMenu menu3 = new JMenu("工具");
-//		JMenu menu4 = new JMenu("帮助");
-//		menubar.add(menu1);
-//		menubar.add(menu2);
-//		menubar.add(menu3);
-//		menubar.add(menu4);
-	
 		label = new JLabel("所选文件");
 		label.setFont(new Font("微软雅黑", Font.PLAIN, 16));
 		label.setBounds(10, 10, 78, 22);
@@ -126,7 +136,7 @@ public class MainWindow {
 		//显示选择的文件
 		textField_filename = new JTextField();
 		textField_filename.setFont(new Font("微软雅黑", Font.PLAIN, 15));
-		textField_filename.setBounds(10, 42, 642, 33);
+		textField_filename.setBounds(10, 42, 711, 33);
 		frame.getContentPane().add(textField_filename);
 		textField_filename.setColumns(10);
 		
@@ -140,8 +150,16 @@ public class MainWindow {
 		textArea_wordfrequency.setLineWrap(true);//自动换行
 		textArea_wordfrequency.setFont(new Font("Microsoft Himalaya", Font.PLAIN, 26));
 		scrollPane = new JScrollPane(textArea_wordfrequency);
-		scrollPane.setBounds(10, 135, 642, 300);
+		scrollPane.setBounds(10, 135, 395, 359);
 		frame.getContentPane().add(scrollPane);
+		
+		//关键词显示区
+		textArea_keyword = new JTextArea();
+		textArea_keyword.setLineWrap(true);//自动换行
+		textArea_keyword.setFont(new Font("Microsoft Himalaya", Font.PLAIN, 26));
+		JScrollPane scrollPane_1 = new JScrollPane(textArea_keyword);
+		scrollPane_1.setBounds(437, 135, 395, 359);
+		frame.getContentPane().add(scrollPane_1);
 		
 		JButton btn_choose = new JButton("选择文件");
 		btn_choose.setFont(new Font("微软雅黑", Font.PLAIN, 16));
@@ -154,8 +172,9 @@ public class MainWindow {
 //				fileChooser.showOpenDialog(null);
 				
 				//使用指定目录
-				fileChooser.setCurrentDirectory(new File("E:/MUC/研究/藏文统计词频/藏文文件/藏文"));
-				
+//				fileChooser.setCurrentDirectory(new File("E:/MUC/研究/藏文统计词频/藏文文件/藏文"));
+				fileChooser.setCurrentDirectory(new File("E:/MUC/研究/基于Web的藏文文本主题词提取及摘要生成技术/2016已分词/2016已分词/9/4"));
+//				fileChooser.setCurrentDirectory(new File("E:/MUC/研究/基于Web的藏文文本主题词提取及摘要生成技术/2016已分词/2016已分词"));
 				FileNameExtensionFilter filter = new FileNameExtensionFilter("XML文件", "xml");
 				fileChooser.setFileFilter(filter);
 				fileChooser.setMultiSelectionEnabled(true);//设置是否可以多选
@@ -167,9 +186,9 @@ public class MainWindow {
 		        File file = fileChooser.getSelectedFile();  
 		        
 		        GetFileName getName = new GetFileName();
-		        wf_save_path = getName.getFileNameNoEx(fileChooser.getDescription(file));//获得文件名 用來保存统计的词频
+		        wf_save_fileName = getName.getFileNameNoEx(fileChooser.getDescription(file));//获得文件名 用來保存统计的词频
 		        
-		        System.out.println("仅得到所选择的文件名：" + wf_save_path);
+		        System.out.println("仅得到所选择的文件名：" + wf_save_fileName);
 		        System.out.println("验证："+file);
 		        
 		        /*
@@ -204,7 +223,7 @@ public class MainWindow {
 				if(i == JFileChooser.APPROVE_OPTION){
 					File selectedFile = fileChooser.getSelectedFile();//获取选中的文件对象
 					textField_filename.setText(selectedFile.getName());//显示选中文件的名称
-					textArea_wordfrequency.setText(selectedFile.getName());
+//					textArea_wordfrequency.setText(selectedFile.getName());
 
 					ExtractText extract = new ExtractText();
 					/*
@@ -238,14 +257,20 @@ public class MainWindow {
 				
 			}
 		});
-		btn_choose.setBounds(674, 42, 101, 33);
+		btn_choose.setBounds(731, 42, 101, 33);
 		frame.getContentPane().add(btn_choose);
-		//开始统计按钮监听事件
+		
+		/*
+		 * 统计词频事件
+		 */
 		btn_begain = new JButton("开始统计");
 //		btn_begain.addActionListener(new BtnListener(textArea_wordfrequency,isDirectory,contentList,filenameList,content,wf_save_path));
 		
 		btn_begain.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				
+				pipeiWord.clear();//将匹配List清空
+				
 				/*
 				 * 统计多个文件
 				 */
@@ -305,18 +330,44 @@ public class MainWindow {
 					String regex2 = "\\d+";  //数字：[0-9]
 					String regex3 = " +"; //一个或多个空格
 					String regex4 = "\\w*";//去除字母和数字
-					String[] wordsNew = content
+					String strr = content
 							.replaceAll(regex1, "").replaceAll(regex2, "").replaceAll(regex3, "")
 							.replaceAll(regex4, "")
-//							.replaceAll("་", "")
-							.replace("'", "").replace("\"", "")
-							.replace(",", "").replace("《", "").replace("》", "").replace("‘", "")
-							.replace("’", "").replace("(", "").replace(")", "")						
-							.replace("”", "").replace("“", "").replaceAll(";", "").split("/");
+							.replaceAll("'", "").replaceAll("\"", "")
+							.replaceAll(",", "").replaceAll("《", "").replaceAll("》", "").replaceAll("‘", "")
+							.replaceAll("’", "").replace("(", "").replace(")", "")
+							.replaceAll("）", "").replaceAll("（", "")	
+							.replaceAll("«", "").replaceAll("»", "")
+							.replaceAll("”", "").replaceAll("“", "").replaceAll(";", "");
+					
+					/*
+					 * String regax5 = "(.)\\1+";
+					   String strra = strr.replaceAll(regax5,"$1");//$1代表第一组中的内容
+					 * 去除重叠的/ 防治划分时出现空白内容
+					 * 2017.3.20
+					 * by yhs
+					 */
+					String regax5 = "(.)\\1+";
+					String strra = strr.replaceAll(regax5,"$1");//$1代表第一组中的内容
+					
+					String[] wordsNew = strra.split("/");
+					
+					System.out.println("wordsNew大小：" + wordsNew.length);
+					wordList = new ArrayList<String>();
+					for(int i = 0;i < wordsNew.length;i++){
+						if(!(wordsNew[i] == null)){
+							wordList.add(wordsNew[i]);
+							System.out.println(wordsNew[i]);
+						}
+					}
 					
 					System.out.println("wordsNew大小：" + wordsNew.length);
 					List<String> wordList = new ArrayList<String>();
-
+					for(int i = 0;i < wordsNew.length;i++){
+						wordList.add(wordsNew[i]);
+					}
+					System.out.println("wordList大小：" + wordList.size());
+					
 					/*
 					 * 读取停用词
 					 */
@@ -329,37 +380,38 @@ public class MainWindow {
 					}
 					ArrayList<String> stopWordList = new ArrayList<>();
 					stopWordList = rsw.getStopWordList();
-//					for(int i = 0;i < stopWordList.size();i++){
-////						System.out.println("停用词： " + stopWordList.get(i));
-//						content = content.replaceAll(stopWordList.get(i), "");
-//					}
 					
 					/*
 					 * 去除停用词
 					 */
-					for(int k = 0;k < wordsNew.length;k++){
+					int listSize = wordList.size();
+					for(int k = 0;k < listSize - 1;k++){
+//						System.out.println("wordList: " + wordList.get(k));
 						for(int j = 0;j < stopWordList.size();j++){
-							if(wordsNew[k].equals(stopWordList.get(j))){
-								System.out.println("重复词语： " + wordsNew[k]);
-								break;
-							}else{
-								wordList.add(wordsNew[k]);
-								break;
+//							System.out.println("Stop>>>: " + stopWordList.get(j));
+							if(wordList.get(k).equals(stopWordList.get(j))){
+								wordList.remove(k);
+								listSize = wordList.size();
+//								System.out.println("listSize: " + listSize);
+//						        System.out.println("k: " + k);
 							}
 						}
+						if(wordList.get(k).equals("།་")){
+							wordList.remove(k);
+							listSize = wordList.size();
+						}
+						if(wordList.get(k).equals("ལ་")){
+							wordList.remove(k);
+							listSize = wordList.size();
+						}
+						if(wordList.get(k).equals("དུ་")){
+							wordList.remove(k);
+							listSize = wordList.size();
+						}
+						
 					}
-					
-					System.out.println("wordList大小：" + wordList.size());
-					
-//					for(int i = 0;i < wordsNew.length;i++){
-//						if(!(wordsNew[i].equals(""))){
-//							if(!(wordsNew[i].equals("་"))){
-//								wordList.add(wordsNew[i]);
-//								System.out.println("_word: " + wordsNew[i]);
-//							}
-//						}
-//					}
 					String[] _wordsNew = new String[wordList.size()];
+					
 					for(int j = 0;j < wordList.size();j++){
 						_wordsNew[j] = wordList.get(j);
 					}
@@ -368,10 +420,19 @@ public class MainWindow {
 					String[] words = null; // 保存各个词对应
 					int[] wordFreqs = null; // 保存各个词对应的词频
 					
+					/*
+					 * 词频统计
+					 */
 					Statistics statictics = new  Statistics();
 					statictics.countWordFreq(_wordsNew);
 					words = statictics.getWords();
 					wordFreqs = statictics.getWordFreqs();
+					
+//					WriteFile writeFile1 = new WriteFile();
+//					File savefile1 = new File("F:/shareget/v.txt");
+//					for(int i = 0; i < words.length;i++){
+//						writeFile1.writeFile(savefile1, words[i] + "\r\n");
+//					}
 					
 					/*
 					 * 词频排序
@@ -380,42 +441,91 @@ public class MainWindow {
 					ws.SortWord(words, wordFreqs);
 					words = ws.get_words();
 					wordFreqs = ws.get_wordFreqs();
+					textArea_wordfrequency.setText("");
 					/*
 					 *将统计的词频写入文件 
 					 */
 					WriteFile writeFile = new WriteFile();
-					for (int i = 0; i < words.length; i++) {
-						File savefile = new File("F:/shareget/" + wf_save_path+ ".txt");
-						writeFile.writeFile(savefile , words[i]+ ":  " + wordFreqs[i] + "\r\n");
-						System.out.println(words[i] + "  " + wordFreqs[i]);
-//						textArea_wordfrequency.append(new String (words[i].getBytes("ISO-8859-1"),"utf-8") + ":  " + wordFreqs[i] + "\r\n");
-						textArea_wordfrequency.append(words[i]+ ":  " + wordFreqs[i] + "\r\n");
-					 }
+					int len = words.length;
+					
+					int num = getRanking();
+					int rank = (num==0)?10:num;
+					System.out.println("rank: " + rank);
+					if(len < rank){
+						for (int i = 0; i < words.length; i++) {
+							
+							pipeiWord.add(words[i]);//将统计的词频加入到匹配list
+							
+							File savefile = new File("F:/shareget/" + wf_save_fileName+ ".txt");
+							writeFile.writeFile(savefile , words[i]+ ":  " + wordFreqs[i] + "\r\n");
+							System.out.println(words[i] + "  " + wordFreqs[i]);
+//							textArea_wordfrequency.append(new String (words[i].getBytes("ISO-8859-1"),"utf-8") + ":  " + wordFreqs[i] + "\r\n");
+							textArea_wordfrequency.append(words[i]+ ":  " + wordFreqs[i] + "\r\n");
+						}
+					}else{
+						for (int i = 0; i < rank; i++) {
+							
+							pipeiWord.add(words[i]);//将统计的词频加入到匹配list
+							
+							File savefile = new File("F:/shareget/" + wf_save_fileName+ ".txt");
+							writeFile.writeFile(savefile , words[i]+ ":  " + wordFreqs[i] + "\r\n");
+							System.out.println(words[i] + "  " + wordFreqs[i]);
+//							textArea_wordfrequency.append(new String (words[i].getBytes("ISO-8859-1"),"utf-8") + ":  " + wordFreqs[i] + "\r\n");
+							textArea_wordfrequency.append(words[i]+ ":  " + wordFreqs[i] + "\r\n");
+						}
+					}
 				}
-				
-				
-				
 			}
 		});
 		btn_begain.setFont(new Font("微软雅黑", Font.PLAIN, 16));
-		btn_begain.setBounds(674, 343, 101, 33);
+		btn_begain.setBounds(304, 504, 101, 33);
 		frame.getContentPane().add(btn_begain);
 		
-		btn_clear = new JButton("清空");
-		btn_clear.addActionListener(new ActionListener() {
+		/*
+		 * 关键词匹配事件
+		 */
+		btn_pipie = new JButton("开始匹配");
+		btn_pipie.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if(textArea_wordfrequency != null){
-					textArea_wordfrequency.setText("");
+				textArea_keyword.setText("");
+				matchedWord.clear();
+				System.out.println("开始匹配 ActionListener");
+				Key_Word_Match kwm = new Key_Word_Match();
+				try {
+					kwm.Word_Match(wordList);
+					matchedWord = Key_Word_Match.getMatchedWord();
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				WriteFile writeFile = new WriteFile();
+				File savefile = new File("F:/shareget/" + wf_save_fileName+ ".txt");
+				writeFile.writeFile(savefile , "keyword" + "\r\n");
+				
+				for(int i = 0;i < matchedWord.size();i++){
+					
+					pipeiWord.add(matchedWord.get(i));//将关键词加入匹配链表
+					textArea_keyword.append(matchedWord.get(i) + "\r\n");
+					
+					/*
+					 * 将匹配的关键词写入文件
+					 */
+					writeFile.writeFile(savefile , matchedWord.get(i) + "\r\n");
 				}
 			}
 		});
-		btn_clear.setFont(new Font("微软雅黑", Font.PLAIN, 16));
-		btn_clear.setBounds(674, 397, 101, 33);
-		frame.getContentPane().add(btn_clear);
+		btn_pipie.setFont(new Font("微软雅黑", Font.PLAIN, 16));
+		btn_pipie.setBounds(731, 504, 101, 33);
+		frame.getContentPane().add(btn_pipie);
 		
 		separator = new JSeparator();
-		separator.setBounds(10, 91, 765, 2);
+		separator.setBounds(10, 91, 822, 2);
 		frame.getContentPane().add(separator);
+		
+		JLabel label_1 = new JLabel("关键词显示");
+		label_1.setFont(new Font("微软雅黑", Font.PLAIN, 16));
+		label_1.setBounds(435, 108, 91, 22);
+		frame.getContentPane().add(label_1);
 		
 		menuBar = new JMenuBar();
 		frame.setJMenuBar(menuBar);
@@ -423,10 +533,70 @@ public class MainWindow {
 		JMenu mnNewMenu = new JMenu("菜单");
 		menuBar.add(mnNewMenu);
 		
-		JMenuItem mntmNewMenuItem = new JMenuItem("退出");
+		menuItem = new JMenuItem("退出");
+		menuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				System.exit(0); 
+			}
+		});
+		
+		
+		menuItem = new JMenuItem("退出");
+		menuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				System.exit(0); 
+			}
+		});
+		
+		JMenuItem menuItem_1 = new JMenuItem("清空");
+		menuItem_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(textArea_wordfrequency != null){
+					textArea_wordfrequency.setText("");
+					textArea_keyword.setText("");
+				}
+			}
+		});
+		
+		JMenuItem menuItem_2 = new JMenuItem("摘要生成");
+		menuItem_2.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				AbstractExtract ae = new AbstractExtract();
+				String path = xpath.replace("已", "未");
+				System.out.println(path);
+				try {
+					ae.Abstract(path, pipeiWord,wf_save_fileName);
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		});
+		mnNewMenu.add(menuItem_2);
+		mnNewMenu.add(menuItem_1);
+		mnNewMenu.add(menuItem);
+		
+		
+		menuItem_3 = new JMenuItem("批量摘要生成");
+		menuItem_3.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				
+			}
+		});
+		mnNewMenu.add(menuItem_3);
+		
+		JMenuItem mntmNewMenuItem = new JMenuItem("设置");
+		mntmNewMenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Object[] opObjects = {"10","9","8","7","6","5","4","3","2","1"};
+				String num = (String) JOptionPane.showInputDialog(null,"请选择频率","输入",JOptionPane
+						.INFORMATION_MESSAGE,new ImageIcon(),opObjects,opObjects[0]);
+				System.out.println("message: " + num);
+				setRanking(Integer.parseInt(num));
+			}
+		});
 		mnNewMenu.add(mntmNewMenuItem);
-		
-		
-		
+		mnNewMenu.add(menuItem_1);
+		mnNewMenu.add(menuItem);
 	}
 }

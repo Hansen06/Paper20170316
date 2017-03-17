@@ -3,7 +3,7 @@ package com.yhs.test;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import util.ReadStopWords;
+import utils.ReadStopWords;
 
 public class RemoveStopWord {
 

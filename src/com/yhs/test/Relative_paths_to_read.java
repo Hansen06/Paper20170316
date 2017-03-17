@@ -9,8 +9,8 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
-import util.ReadStopWords;
-import util.WriteFile;
+import utils.ReadStopWords;
+import utils.WriteFile;
 
 public class Relative_paths_to_read {
 
