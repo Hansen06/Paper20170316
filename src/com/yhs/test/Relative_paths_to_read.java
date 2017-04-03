@@ -29,8 +29,9 @@ public class Relative_paths_to_read {
 	private static void demo1() throws UnsupportedEncodingException,
 			FileNotFoundException, IOException {
 		String encoding="utf-8";
-        File file=new File("file/filter.txt");
+        File file=new File("file/天文.txt");
         WriteFile writeFile = new WriteFile();
+        int num = 0;
         if(file.isFile() && file.exists()){ //判断文件是否存在
             InputStreamReader read = new InputStreamReader(new FileInputStream(file),encoding);//考虑到编码格式
             BufferedReader bufferedReader = new BufferedReader(read);
@@ -38,8 +39,10 @@ public class Relative_paths_to_read {
             String regex = "[\\w]|[-]";
             while((lineTxt = bufferedReader.readLine()) != null){
             	System.out.println(">>>..." + lineTxt);
-            	writeFile.writeFile("F:/shareget/a.txt" , lineTxt);
+            	num++;
+//            	writeFile.writeFile("F:/shareget/a.txt" , lineTxt);
              }
+            System.out.println("num: " + num);
             read.close();
 	     }else{
 	            System.out.println("找不到指定的文件");

@@ -39,7 +39,7 @@ public class WriteFile {
             } catch (Exception e) {  
                 e.printStackTrace();  
             }  
-            System.out.println("写入文件成功！");
+//            System.out.println("写入文件成功！");
         }else{
         	try {  
                 FileOutputStream out = new FileOutputStream(dir,true); // 输出文件路径  
@@ -49,7 +49,7 @@ public class WriteFile {
             } catch (Exception e) {  
                 e.printStackTrace();  
             }  
-            System.out.println("写入文件成功！");
+//            System.out.println("写入文件成功！");
         }
     }  
 }

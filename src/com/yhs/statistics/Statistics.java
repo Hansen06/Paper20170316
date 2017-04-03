@@ -39,11 +39,17 @@ public class Statistics {
 			freqList.add(count++);
 		}
 
+		System.out.println("freqList size: " + freqList.size());
+		System.out.println("wordsList size: " + wordsList.size());
+		
 		words = wordsList.toArray(new String[0]); // 存入数组当中
 		wordFreqs = new int[freqList.size()];
 		for (int i = 0; i < freqList.size(); i++) {
 			wordFreqs[i] = freqList.get(i);
 		}
+		
+		wordsList.clear();
+		freqList.clear();
 			
 	}
 

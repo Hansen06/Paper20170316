@@ -2,6 +2,7 @@ package com.yhs.main;
 
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.awt.SystemColor;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -27,7 +28,6 @@ import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import utils.GetFileName;
-import utils.List_To_String;
 import utils.ReadFile;
 import utils.ReadStopWords;
 import utils.WordSort;
@@ -37,8 +37,6 @@ import com.yhs.abstract_extract.AbstractExtract;
 import com.yhs.extract.ExtractText;
 import com.yhs.keywordmatch.Key_Word_Match;
 import com.yhs.statistics.Statistics;
-import java.awt.Color;
-import java.awt.SystemColor;
 
 public class MainWindow {
 

@@ -13,7 +13,8 @@ public class ReadFile {
 	
 	public static ArrayList<String> filepathList = new ArrayList<String>();
 	public static ArrayList<String> filenameList = new ArrayList<String>();
-     
+	public static ArrayList<String> rootpathList = new ArrayList<String>();//保存根路径
+	public static ArrayList<String> digest_root_path_list = new ArrayList<String>();//摘要保存路径
 	
 	public static boolean readfile(String filepath) throws FileNotFoundException, IOException {
 	
@@ -84,12 +85,38 @@ public class ReadFile {
                 filepathList.add(files[i].toString());//保存文件路径
       
                 filenameList.add(getFileName.getFileNameNoEx(files[i].getName()));//保存文件名称
+                
+                String[] str = files[i].toString().split("\\\\");
+                String root_path = str[str.length-3] + "/" + str[str.length-2];
+                rootpathList.add(root_path);
+                
+                String digest_root_path = root_path + "_digest";
+                digest_root_path_list.add(digest_root_path);
+//                System.out.println("root_path》》》 " + root_path);
             }     
         } 
         return true;
     }  
 	
-    public static ArrayList<String> getFilenameList() {
+
+	public static ArrayList<String> getRootpathList() {
+		return rootpathList;
+	}
+
+	public static void setRootpathList(ArrayList<String> rootpathList) {
+		ReadFile.rootpathList = rootpathList;
+	}
+
+	public static ArrayList<String> getDigest_root_path_list() {
+		return digest_root_path_list;
+	}
+
+	public static void setDigest_root_path_list(
+			ArrayList<String> digest_root_path_list) {
+		ReadFile.digest_root_path_list = digest_root_path_list;
+	}
+
+	public static ArrayList<String> getFilenameList() {
 		return filenameList;
 	}
 

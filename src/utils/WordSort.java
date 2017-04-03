@@ -13,27 +13,16 @@ import javax.persistence.criteria.CriteriaBuilder.In;
  */
 public class WordSort{
 	
-	public String[] get_words() {
-		return _words;
-	}
-
-	public void set_words(String[] _words) {
-		this._words = _words;
-	}
-
-	public int[] get_wordFreqs() {
-		return _wordFreqs;
-	}
-
-	public void set_wordFreqs(int[] _wordFreqs) {
-		this._wordFreqs = _wordFreqs;
-	}
-
 	Map<String, Integer> wordMap = new HashMap<>();
 	String[] _words = null;
 	int[] _wordFreqs = null;
  	
 	public void SortWord(String[] words, int[] wordFreqs){
+		
+		wordMap.clear();//清空
+		_wordFreqs = null;//清空
+	    _words = null;//清空
+		
 		_words = words;
 		_wordFreqs = wordFreqs;
 		for(int i = 0;i < _words.length;i++){
@@ -60,5 +49,21 @@ public class WordSort{
 		    _wordFreqs[i] = _wordMap.get(i).getValue();
 		}
 		System.out.println("词频排序完毕！");
+	}
+	
+	public String[] get_words() {
+		return _words;
+	}
+
+	public void set_words(String[] _words) {
+		this._words = _words;
+	}
+
+	public int[] get_wordFreqs() {
+		return _wordFreqs;
+	}
+
+	public void set_wordFreqs(int[] _wordFreqs) {
+		this._wordFreqs = _wordFreqs;
 	}
 }
